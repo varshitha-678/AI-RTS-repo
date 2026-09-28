@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>ATS Result — AI ATS Analyzer</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="min-h-screen bg-slate-950 text-white">
+
+  <nav class="bg-slate-900 border-b border-slate-700 px-6 py-4 flex items-center justify-between">
+    <a href="/dashboard/" class="flex items-center gap-2 text-blue-400 hover:text-white transition text-sm">
+      ← Back to Dashboard
+    </a>
+    <span class="font-bold text-lg">ATS Analysis Result</span>
+    <a href="/career-path/{{ result._id }}/" class="px-4 py-2 bg-green-600 hover:bg-green-700 rounded-lg text-sm font-medium transition">
+      View Career Path →
+    </a>
+  </nav>
+
+  {% with r=result.ats_result %}
+  <main class="max-w-5xl mx-auto px-6 py-10 space-y-8">
+
+    <!-- ATS Score Hero -->
+    <div class="bg-gradient-to-r from-blue-900 to-slate-800 rounded-2xl border border-blue-700 p-8 flex flex-col md:flex-row items-center gap-8">
+      <!-- Circular score -->
+      <div class="relative flex-shrink-0">
+        <svg class="w-36 h-36 -rotate-90" viewBox="0 0 120 120">
+          <circle cx="60" cy="60" r="50" fill="none" stroke="#1e3a5f" stroke-width="10"/>
+          <circle cx="60" cy="60" r="50" fill="none"
+            stroke="{% if r.ats_score >= 75 %}#22c55e{% elif r.ats_score >= 50 %}#eab308{% else %}#ef4444{% endif %}"
+            stroke-width="10"
+            stroke-dasharray="314"
+            stroke-dashoffset="{{ 314|add:'-'|add:r.ats_score|floatformat:0 }}"
+            style="stroke-dashoffset: calc(314 - (314 * {{ r.ats_score }} / 100));"
+            stroke-linecap="round"/>
+        </svg>
+        <div class="absolute inset-0 flex flex-col items-center justify-center">
+          <span class="text-4xl font-bold">{{ r.ats_score }}%</span>
+          <span class="text-xs text-slate-400">ATS Score</span>
+        </div>
+      </div>
+
+      <div>
+        <h2 class="text-2xl font-bold">{{ r.job_title|default:"Position Analysis" }}</h2>
+        <p class="text-slate-300 mt-1">Candidate: <strong>{{ r.name }}</strong></p>
+        <p class="text-slate-400 mt-1 text-sm">Experience: {{ r.experience_years }} years</p>
+        <div class="flex gap-3 mt-4">
+          <span class="px-3 py-1 rounded-full text-xs font-bold
+            {% if r.ats_score >= 75 %}bg-green-500/20 text-green-400{% elif r.ats_score >= 50 %}bg-yellow-500/20 text-yellow-400{% else %}bg-red-500/20 text-red-400{% endif %}">
+            {% if r.ats_score >= 75 %}Strong Match{% elif r.ats_score >= 50 %}Moderate Match{% else %}Needs Work{% endif %}
+          </span>
+          <span class="px-3 py-1 rounded-full text-xs font-bold bg-blue-500/20 text-blue-400">
+            Match: {{ r.match_percentage }}%
+          </span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Model Scores Grid -->
+    <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+      {% for label, val in "TF-IDF,SBERT,BERT,Word2Vec"|split:"," %}
+      {% endfor %}
+      <div class="bg-slate-800 rounded-xl border border-slate-700 p-5 text-center">
+        <p class="text-slate-400 text-xs mb-1">TF-IDF</p>
+        <p class="text-2xl font-bold text-blue-400">{{ r.tfidf_score }}%</p>
+      </div>
+      <div class="bg-slate-800 rounded-xl border border-slate-700 p-5 text-center">
+        <p class="text-slate-400 text-xs mb-1">Sentence-BERT</p>
+        <p class="text-2xl font-bold text-purple-400">{{ r.sbert_score }}%</p>
+      </div>
+      <div class="bg-slate-800 rounded-xl border border-slate-700 p-5 text-center">
+        <p class="text-slate-400 text-xs mb-1">BERT</p>
+        <p class="text-2xl font-bold text-pink-400">{{ r.bert_score }}%</p>
+      </div>
+      <div class="bg-slate-800 rounded-xl border border-slate-700 p-5 text-center">
+        <p class="text-slate-400 text-xs mb-1">Word2Vec</p>
+        <p class="text-2xl font-bold text-yellow-400">{{ r.w2v_score }}%</p>
+      </div>
+    </div>
+
+    <!-- Skills -->
+    <div class="grid md:grid-cols-2 gap-6">
+      <!-- Matched Skills -->
+      <div class="bg-slate-800 rounded-2xl border border-slate-700 p-6">
+        <h3 class="font-semibold text-green-400 mb-4">✓ Matched Skills ({{ r.matched_skills|length }})</h3>
+        <div class="flex flex-wrap gap-2">
+          {% for skill in r.matched_skills %}
+          <span class="px-3 py-1 bg-green-500/15 border border-green-500/30 text-green-400 rounded-full text-xs">{{ skill }}</span>
+          {% empty %}
+          <p class="text-slate-500 text-sm">No matched skills detected.</p>
+          {% endfor %}
+        </div>
+      </div>
+
+      <!-- Missing Skills -->
+      <div class="bg-slate-800 rounded-2xl border border-slate-700 p-6">
+        <h3 class="font-semibold text-red-400 mb-4">✗ Missing Skills ({{ r.missing_skills|length }})</h3>
+        <div class="flex flex-wrap gap-2">
+          {% for skill in r.missing_skills %}
+          <span class="px-3 py-1 bg-red-500/15 border border-red-500/30 text-red-400 rounded-full text-xs">{{ skill }}</span>
+          {% empty %}
+          <p class="text-slate-500 text-sm">No missing skills — great match!</p>
+          {% endfor %}
+        </div>
+      </div>
+    </div>
+
+    <!-- Education & Certifications -->
+    <div class="grid md:grid-cols-2 gap-6">
+      <div class="bg-slate-800 rounded-2xl border border-slate-700 p-6">
+        <h3 class="font-semibold mb-4 text-blue-300">🎓 Education</h3>
+        {% if r.education %}
+          <ul class="space-y-2 text-sm text-slate-300">
+            {% for edu in r.education %}<li class="flex items-start gap-2"><span class="text-blue-400 mt-0.5">•</span>{{ edu }}</li>{% endfor %}
+          </ul>
+        {% else %}
+          <p class="text-slate-500 text-sm">Not detected in resume.</p>
+        {% endif %}
+      </div>
+      <div class="bg-slate-800 rounded-2xl border border-slate-700 p-6">
+        <h3 class="font-semibold mb-4 text-yellow-300">🏆 Certifications</h3>
+        {% if r.certifications %}
+          <ul class="space-y-2 text-sm text-slate-300">
+            {% for cert in r.certifications %}<li class="flex items-start gap-2"><span class="text-yellow-400 mt-0.5">•</span>{{ cert }}</li>{% endfor %}
+          </ul>
+        {% else %}
+          <p class="text-slate-500 text-sm">No certifications detected.</p>
+        {% endif %}
+      </div>
+    </div>
+
+    <!-- All Extracted Skills -->
+    <div class="bg-slate-800 rounded-2xl border border-slate-700 p-6">
+      <h3 class="font-semibold mb-4 text-slate-200">🛠 All Extracted Skills</h3>
+      <div class="flex flex-wrap gap-2">
+        {% for skill in r.extracted_skills %}
+        <span class="px-3 py-1 bg-blue-500/10 border border-blue-500/20 text-blue-300 rounded-full text-xs">{{ skill }}</span>
+        {% empty %}
+        <p class="text-slate-500 text-sm">No skills extracted.</p>
+        {% endfor %}
+      </div>
+    </div>
+
+    <!-- CTA -->
+    <div class="bg-gradient-to-r from-green-900 to-slate-800 rounded-2xl border border-green-700 p-8 text-center">
+      <h3 class="text-xl font-bold mb-2">Get Your Personalized Career Roadmap</h3>
+      <p class="text-slate-400 mb-5">See step-by-step what you need to learn, build, and certify to land this job.</p>
+      <a href="/career-path/{{ result._id }}/"
+        class="px-8 py-3 bg-green-600 hover:bg-green-700 rounded-xl font-semibold transition inline-block">
+        View Career Path →
+      </a>
+    </div>
+
+  </main>
+  {% endwith %}
+</body>
+</html>
